@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from models import db, Restaurant, RestaurantPizza, Pizza
 from flask_migrate import Migrate
 from flask import Flask, request, jsonify, make_response
@@ -29,14 +30,14 @@ class RestaurantsResource(Resource):
 
 class RestaurantResource(Resource):
     def get(self, id):
-        restaurant = db.session.get(Restaurant, id)
+        restaurant = Restaurant.query.get(id)
         if restaurant:
             return jsonify(restaurant.to_dict(only=('id', 'name', 'address', 'restaurant_pizzas')))
         else:
             return make_response(jsonify({"error": "Restaurant not found"}), 404)
     
     def delete(self, id):
-        restaurant = db.session.get(Restaurant, id)
+        restaurant = Restaurant.query.get(id)
         if restaurant:
             db.session.delete(restaurant)
             db.session.commit()
@@ -60,18 +61,11 @@ class RestaurantPizzasResource(Resource):
             )
             db.session.add(new_restaurant_pizza)
             db.session.commit()
-            return make_response(jsonify({
-                'id': new_restaurant_pizza.id,
-                'price': new_restaurant_pizza.price,
-                'pizza_id': new_restaurant_pizza.pizza_id,
-                'restaurant_id': new_restaurant_pizza.restaurant_id,
-                'pizza': new_restaurant_pizza.pizza.to_dict(),
-                'restaurant': new_restaurant_pizza.restaurant.to_dict()
-            }), 201)
+            return make_response(jsonify(new_restaurant_pizza.to_dict(only=('id', 'price', 'pizza_id', 'restaurant_id', 'pizza', 'restaurant'))), 201)
         except ValueError as e:
             return make_response(jsonify({"errors": [str(e)]}), 400)
         except KeyError as e:
-            return make_response(jsonify({"errors": [f"KeyError: Missing required key '{e.args[0]}'"]})), 400
+            return make_response(jsonify({"errors": [f"KeyError: Missing required key '{e.args[0]}'"]}), 400)
 
 api.add_resource(RestaurantsResource, '/restaurants')
 api.add_resource(RestaurantResource, '/restaurants/<int:id>')
